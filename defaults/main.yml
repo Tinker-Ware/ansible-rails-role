@@ -1,0 +1,11 @@
+---
+rails_git_key_path: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
+rails_repos:
+  app1:
+    name: https://github.com/RailsApps/rails-signup-download.git
+    port: 3000
+    branch: master
+  app2:
+    name: https://github.com/RailsApps/learn-rails.git
+    port: 4000
+    branch: master

@@ -3,7 +3,7 @@ rails_git_key_path: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
 rails_git_repo: https://github.com/RailsApps/learn-rails
 rails_ruby_version: 2.3.3
 rails_rails_version: 5.0.0.1
-rails_ruby_version_download_path: "/home/vagrant/ruby-2{{ rails_ruby_version }}.tar.gz"
+rails_ruby_version_download_path: "/home/vagrant/ruby-{{ rails_ruby_version }}.tar.gz"
 rails_repo_dest_path: /home/vagrant/learn-rails
 rails_gemfile_path: /home/vagrant/learn-rails/Gemfile
 rails_home_path: /home/vagrant

@@ -32,24 +32,24 @@
   sudo: yes
   sudo_user: "{{ server_user }}"
 
-- name: unpack ruby2.3.3
+- name: unpack new ruby version
   unarchive:
     src: "{{ ruby_version_download_path }}"
-    dest: /home/vagrant
+    dest: "{{home_path}}"
   sudo: yes
   sudo_user: "{{ server_user }}"
 
 - name: install new ruby version
   command: ./configure
   args:
-    chdir: /home/vagrant/ruby-"{{ruby_version}}"/
+    chdir: "/home/vagrant/ruby-{{ruby_version}}/"
 
 - make:
-    chdir: /home/vagrant/ruby-"{{ruby_version}}"/
+    chdir: "/home/vagrant/ruby-{{ruby_version}}/"
 
 - name: Install new ruby version
   make:
-    chdir: /home/vagrant/ruby-"{{ruby_version}}"/
+    chdir: "/home/vagrant/ruby-{{ruby_version}}/"
     target: install
   sudo: yes
   sudo_user: "{{ server_user }}"
@@ -59,7 +59,7 @@
   sudo: yes
 
 - name: install rails
-  command: gem install rails -v "{{ rails_version }}"
+  command: "gem install rails -v {{ rails_version }}"
   sudo: yes
 
 - name: clone repo
@@ -67,11 +67,11 @@
     repo: "{{ rails_git_repo }}"
     dest: "{{repo_dest_path}}"
 
-- name: Remove rubyversion from Gemfiles
+- name: remove rubyversion from Gemfiles
   lineinfile:
     dest: ""{{gemfile_path}}""
     regexp: "ruby '.*'"
-    line: "ruby '"{{ruby_version}}"'"
+    line: 'ruby "{{ruby_version}}"'
     backup: no
 
 - name: Get dependencies for repo.
@@ -80,6 +80,6 @@
     chdir: "{{repo_dest_path}}"
 
 - name: Start aplication
-  shell: nohup rails server --binding=0.0.0.0 --port=3000 >> /tmp/rails.log 2>&1 &
+  shell: "nohup rails server --binding={{binding_num}} --port={{port_num}} >> /tmp/rails.log 2>&1 &"
   args:
     chdir: "{{repo_dest_path}}"

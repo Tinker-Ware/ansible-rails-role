@@ -24,62 +24,62 @@
 
 - name: download specified ruby version
   get_url:
-    url: "http://ftp.ruby-lang.org/pub/ruby/{{ ruby_version |  }}/ruby-{{ ruby_version }}.tar.gz"
-    dest: "{{ ruby_version_download_path }}"
+    url: "http://ftp.ruby-lang.org/pub/ruby/{{ rails_ruby_version |  }}/ruby-{{ rails_ruby_version }}.tar.gz"
+    dest: "{{ rails_ruby_version_download_path }}"
     mode: 0644
-    owner: "{{ owner_name }}"
-    group: "{{ group_name }}"
+    owner: "{{ rails_owner_name }}"
+    group: "{{ rails_group_name }}"
   sudo: yes
-  sudo_user: "{{ server_user }}"
+  sudo_user: "{{ rails_server_user }}"
 
 - name: unpack new ruby version
   unarchive:
-    src: "{{ ruby_version_download_path }}"
-    dest: "{{home_path}}"
+    src: "{{ rails_ruby_version_download_path }}"
+    dest: "{{ rails_home_path }}"
   sudo: yes
-  sudo_user: "{{ server_user }}"
+  sudo_user: "{{ rails_server_user }}"
 
 - name: install new ruby version
   command: ./configure
   args:
-    chdir: "/home/vagrant/ruby-{{ruby_version}}/"
+    chdir: "/home/vagrant/ruby-{{ rails_ruby_version }}"
 
 - make:
-    chdir: "/home/vagrant/ruby-{{ruby_version}}/"
+    chdir: "/home/vagrant/ruby-{{ rails_ruby_version }}"
 
 - name: Install new ruby version
   make:
-    chdir: "/home/vagrant/ruby-{{ruby_version}}/"
+    chdir: "/home/vagrant/ruby-{{ rails_ruby_version }}"
     target: install
   sudo: yes
-  sudo_user: "{{ server_user }}"
+  sudo_user: "{{ rails_server_user }}"
 
 - name: install bundler
   command: gem install bundler
   sudo: yes
 
 - name: install rails
-  command: "gem install rails -v {{ rails_version }}"
+  command: "gem install rails -v {{ rails_rails_version }}"
   sudo: yes
 
 - name: clone repo
   git:
     repo: "{{ rails_git_repo }}"
-    dest: "{{repo_dest_path}}"
+    dest: "{{ rails_repo_dest_path }}"
 
 - name: remove rubyversion from Gemfiles
   lineinfile:
-    dest: ""{{gemfile_path}}""
+    dest: ""{{ rails_gemfile_path }}""
     regexp: "ruby '.*'"
-    line: 'ruby "{{ruby_version}}"'
+    line: 'ruby "{{ rails_ruby_version }}"'
     backup: no
 
 - name: Get dependencies for repo.
   command: bundle install
   args:
-    chdir: "{{repo_dest_path}}"
+    chdir: "{{ rails_repo_dest_path }}"
 
 - name: Start aplication
-  shell: "nohup rails server --binding={{binding_num}} --port={{port_num}} >> /tmp/rails.log 2>&1 &"
+  shell: "nohup rails server --binding={{ rails_binding_num }} --port={{ rails_port_num }} >> /tmp/rails.log 2>&1 &"
   args:
-    chdir: "{{repo_dest_path}}"
+    chdir: "{{ rails_repo_dest_path }}"

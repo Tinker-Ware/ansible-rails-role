@@ -1,17 +1,17 @@
 ---
 rails_git_key_path: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
 rails_git_repo: https://github.com/RailsApps/learn-rails
-ruby_version: 2.3.3
-rails_version: 5.0.0.1
-ruby_version_download_path: /home/vagrant/ruby2.3.3.tar.gz
-repo_dest_path: /home/vagrant/learn-rails
-gemfile_path: /home/vagrant/learn-rails/Gemfile
-home_path: /home/vagrant
-owner_name: vagrant
-group_name: vagrant
-server_user: tinkerware
-port_num: 3000
-binding_num: 0.0.0.0
+rails_ruby_version: 2.3.3
+rails_rails_version: 5.0.0.1
+rails_ruby_version_download_path: "/home/vagrant/ruby-2{{ rails_ruby_version }}.tar.gz"
+rails_repo_dest_path: /home/vagrant/learn-rails
+rails_gemfile_path: /home/vagrant/learn-rails/Gemfile
+rails_home_path: /home/vagrant
+rails_owner_name: vagrant
+rails_group_name: vagrant
+rails_server_user: tinkerware
+rails_port_num: 3000
+rails_binding_num: 0.0.0.0
 rails_repos:
   app1:
     name: https://github.com/RailsApps/rails-signup-download.git

@@ -2,6 +2,14 @@
 rails_git_key_path: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
 rails_git_repo: https://github.com/RailsApps/learn-rails
 ruby_version: 2.3.3
+rails_version: 5.0.0.1
+ruby_version_download_path: /home/vagrant/ruby2.3.3.tar.gz
+repo_dest_path: /home/vagrant/learn-rails
+gemfile_path: /home/vagrant/learn-rails/Gemfile
+home_path: /home/vagrant
+owner_name: vagrant
+group_name: vagrant
+server_user: tinkerware
 rails_repos:
   app1:
     name: https://github.com/RailsApps/rails-signup-download.git

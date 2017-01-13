@@ -25,68 +25,61 @@
 - name: download specified ruby version
   get_url:
     url: "http://ftp.ruby-lang.org/pub/ruby/{{ ruby_version |  }}/ruby-{{ ruby_version }}.tar.gz"
-    dest: /home/vagrant/ruby2.3.3.tar.gz
+    dest: "{{ ruby_version_download_path }}"
     mode: 0644
-    owner: vagrant
-    group: vagrant
+    owner: "{{ owner_name }}"
+    group: "{{ group_name }}"
   sudo: yes
-    
-- file:
-    path: "/home/vagrant/ruby2.3.3"
-    state: directory
-    mode: 0755
-    owner: vagrant
-    group: vagrant
-  sudo: yes
+  sudo_user: "{{ server_user }}"
 
 - name: unpack ruby2.3.3
   unarchive:
-    src: /home/vagrant/ruby2.3.3.tar.gz
+    src: "{{ ruby_version_download_path }}"
     dest: /home/vagrant
   sudo: yes
   sudo_user: "{{ server_user }}"
 
-- name: install ruby2.3.3
+- name: install new ruby version
   command: ./configure
   args:
-    chdir: /home/vagrant/ruby-2.3.3/
+    chdir: /home/vagrant/ruby-"{{ruby_version}}"/
 
 - make:
-    chdir: /home/vagrant/ruby-2.3.3
+    chdir: /home/vagrant/ruby-"{{ruby_version}}"/
 
-- name: Install ruby2.3.3
+- name: Install new ruby version
   make:
-    chdir: /home/vagrant/ruby-2.3.3
+    chdir: /home/vagrant/ruby-"{{ruby_version}}"/
     target: install
   sudo: yes
+  sudo_user: "{{ server_user }}"
 
 - name: install bundler
   command: gem install bundler
   sudo: yes
 
 - name: install rails
-  command: gem install rails -v 5.0.0.1
+  command: gem install rails -v "{{ rails_version }}"
   sudo: yes
 
 - name: clone repo
   git:
     repo: "{{ rails_git_repo }}"
-    dest: /home/vagrant/learn-rails
+    dest: "{{repo_dest_path}}"
 
 - name: Remove rubyversion from Gemfiles
   lineinfile:
-    dest: "/home/vagrant/learn-rails/Gemfile"
+    dest: ""{{gemfile_path}}""
     regexp: "ruby '.*'"
-    line: "ruby '2.3.3'"
+    line: "ruby '"{{ruby_version}}"'"
     backup: no
 
 - name: Get dependencies for repo.
   command: bundle install
   args:
-    chdir: /home/vagrant/learn-rails
+    chdir: "{{repo_dest_path}}"
 
 - name: Start aplication
   shell: nohup rails server --binding=0.0.0.0 --port=3000 >> /tmp/rails.log 2>&1 &
   args:
-    chdir: /home/vagrant/learn-rails
-
+    chdir: "{{repo_dest_path}}"

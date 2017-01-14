@@ -24,35 +24,39 @@
 
 - name: download specified ruby version
   get_url:
-    url: "http://ftp.ruby-lang.org/pub/ruby/{{ rails_ruby_version |  }}/ruby-{{ rails_ruby_version }}.tar.gz"
-    dest: "{{ rails_ruby_version_download_path }}"
+    url: "http://ftp.ruby-lang.org/pub/ruby/{{ rails_ruby_version | regex_replace('(^\\d.\\d?).*', '\\1') }}/ruby-{{ rails_ruby_version }}.tar.gz"
+    dest: "{{ rails_ruby_package }}"
     mode: 0644
-    owner: "{{ rails_owner_name }}"
-    group: "{{ rails_group_name }}"
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
   sudo: yes
-  sudo_user: "{{ rails_server_user }}"
+  sudo_user: "{{ server_user }}"
 
 - name: unpack new ruby version
   unarchive:
-    src: "{{ rails_ruby_version_download_path }}"
-    dest: "{{ rails_home_path }}"
+    src: "{{ rails_ruby_package }}"
+    dest: "{{ lookup('env','HOME') }}"
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
   sudo: yes
-  sudo_user: "{{ rails_server_user }}"
 
 - name: install new ruby version
   command: ./configure
   args:
-    chdir: "/home/vagrant/ruby-{{ rails_ruby_version }}"
+    chdir: "{{ rails_ruby_version_path }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
 
 - make:
-    chdir: "/home/vagrant/ruby-{{ rails_ruby_version }}"
+    chdir: "{{ rails_ruby_version_path }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
 
 - name: Install new ruby version
   make:
-    chdir: "/home/vagrant/ruby-{{ rails_ruby_version }}"
+    chdir: "{{ rails_ruby_version_path }}"
     target: install
   sudo: yes
-  sudo_user: "{{ rails_server_user }}"
 
 - name: install bundler
   command: gem install bundler
@@ -62,24 +66,50 @@
   command: "gem install rails -v {{ rails_rails_version }}"
   sudo: yes
 
+- name: Create destination folder for repo
+  file:
+    path: /opt/tinker/shared_files/rails_project
+    state: directory
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
+    mode: 0755
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+
 - name: clone repo
   git:
-    repo: "{{ rails_git_repo }}"
-    dest: "{{ rails_repo_dest_path }}"
+    repo: "{{ item.value.name }}"
+    dest: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
+    version: "{{ item.value.version }}"
+    accept_hostkey: yes
+    recursive: yes
+    update: yes
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
 
 - name: remove rubyversion from Gemfiles
   lineinfile:
-    dest: ""{{ rails_gemfile_path }}""
+    dest: "{{ rails_repos_path }}/{{ item.value.name | basename }}/Gemfile"
     regexp: "ruby '.*'"
     line: 'ruby "{{ rails_ruby_version }}"'
     backup: no
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
 
 - name: Get dependencies for repo.
   command: bundle install
   args:
-    chdir: "{{ rails_repo_dest_path }}"
+    chdir: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
 
 - name: Start aplication
-  shell: "nohup rails server --binding={{ rails_binding_num }} --port={{ rails_port_num }} >> /tmp/rails.log 2>&1 &"
+  shell: "nohup rails server --binding={{ rails_binding_ip }} --port={{ item.value.port }} >> /tmp/rails.log 2>&1 &"
   args:
     chdir: "{{ rails_repo_dest_path }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"

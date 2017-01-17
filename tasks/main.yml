@@ -104,7 +104,6 @@
   args:
     chdir: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
   sudo: yes
-  #sudo_user: "{{ server_user }}"
   with_dict: "{{ rails_git_repos }}"
 
 - name: Start aplication

@@ -1,2 +1,8 @@
 ---
 rails_git_clone_path: /opt/tinker/shared_files/rails
+server_user: tinkerware
+server_group: tinkerware
+rails_ruby_package: "/tmp/{{ rails_ruby_version }}.tar.gz"
+rails_ruby_version_path: "{{ lookup('env','HOME') }}/ruby-{{ rails_ruby_version }}"
+
+

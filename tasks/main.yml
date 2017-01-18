@@ -1,120 +1,115 @@
 ---
-- apt_repository:
-    repo: ppa:brightbox/ruby-ng
-    state: present
-  sudo: yes
-
 - apt:
     name: "{{ item }}"
     state: present
   with_items:
-    - ruby2.3
-    - ruby2.3-dev
+    - ruby-full
+    - git-core
+    - curl
     - zlib1g-dev
-    - sqlite3
+    - build-essential
+    - libpq-dev
+    - libreadline-dev
+    - libyaml-dev
     - libsqlite3-dev
+    - sqlite3
+    - libxml2-dev
+    - libxslt1-dev
+    - libcurl4-openssl-dev
+    - python-software-properties
+    - libffi-dev
     - nodejs
     - libpq-dev
   sudo: yes
-  
-# - name: correct ruby version selected
-#   alternatives:
-#     name: ruby
-#     path: /usr/bin/ruby2.2
 
-- name: Update gem
-  command: gem update --system 
+- name: download specified ruby version
+  get_url:
+    url: "http://ftp.ruby-lang.org/pub/ruby/{{ rails_ruby_version | regex_replace('(^\\d.\\d?).*', '\\1') }}/ruby-{{ rails_ruby_version }}.tar.gz"
+    dest: "{{ rails_ruby_package }}"
+    mode: 0644
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+
+- name: unpack new ruby version
+  unarchive:
+    src: "{{ rails_ruby_package }}"
+    dest: "{{ lookup('env','HOME') }}"
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
+  sudo: yes
+
+- name: install new ruby version
+  command: ./configure
   args:
-    chdir: /home/vagrant
+    chdir: "{{ rails_ruby_version_path }}"
   sudo: yes
-  
-# - name: Install Rails
-#   gem:
-#     name: rails
-#     state: present
-#     user_install: yes
-#     include_dependencies: yes
-#   sudo: yes
-#   tags: installruby
+  sudo_user: "{{ server_user }}"
 
-- name: Install gems
-  command: gem install "{{ item }}"
-  with_items:
-    - rails
-    - bundler
+- make:
+    chdir: "{{ rails_ruby_version_path }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+
+- name: Install new ruby version
+  make:
+    chdir: "{{ rails_ruby_version_path }}"
+    target: install
   sudo: yes
 
-- file:
-    path: "{{ rails_git_clone_path }}"
+- name: install bundler
+  command: gem install bundler
+  sudo: yes
+
+- name: install rails
+  command: "gem install rails -v {{ rails_rails_version }}"
+  sudo: yes
+
+- name: Create destination folder for repo
+  file:
+    path: /opt/tinker/shared_files/rails_project
     state: directory
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
     mode: 0755
-    owner: tinkerware
-    group: tinkerware
   sudo: yes
+  sudo_user: "{{ server_user }}"
 
-- name: Create new blog
-  command: rails new blog
-  args:
-    chdir: "{{ rails_git_clone_path }}"
-    creates: "{{ rails_git_clone_path }}/blog"
-  when: rails_repos is undefined
-  sudo: yes
-  sudo_user: tinkerware
-  
-- name: Clone rails repo
+- name: clone repo
   git:
-    repo="{{ item.value.name }}"
-    dest="{{ rails_git_clone_path }}/{{ item.value.name | basename }}"
-    accept_hostkey=yes
-    key_file="{{ rails_git_key_path | default(no) }}"
-    version="{{ item.value.branch }}"
-  with_dict: "{{ rails_repos | default({}) }}"
-  when: rails_repos is defined
+    repo: "{{ item.value.name }}"
+    dest: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
+    version: "{{ item.value.version }}"
+    accept_hostkey: yes
+    recursive: yes
+    update: yes
   sudo: yes
-  sudo_user: tinkerware  
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
+  ignore_errors: yes
 
-- name: Get blog dependencies
+- name: remove rubyversion from Gemfiles
+  lineinfile:
+    dest: "{{ rails_repos_path }}/{{ item.value.name | basename }}/Gemfile"
+    regexp: "ruby '.*'"
+    line: 'ruby "{{ rails_ruby_version }}"'
+    backup: no
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
+
+- name: Get dependencies for repo.
   shell: bundle install
   args:
-    chdir: "{{ rails_git_clone_path }}/blog"
-  when: rails_repos is undefined  
+    chdir: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
   sudo: yes
-  sudo_user: tinkerware
+  with_dict: "{{ rails_git_repos }}"
 
-- name: Start blog
-  shell: nohup rails server --binding=0.0.0.0 --port=3000 >> /tmp/rails.log 2>&1 &
+- name: Start aplication
+  shell: "nohup rails server --binding={{ rails_binding_ip }} --port={{ item.value.port }} >> /tmp/rails.log 2>&1 &"
   args:
-    chdir: "{{ rails_git_clone_path }}/blog"
-  when: rails_repos is undefined
+    chdir: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
   sudo: yes
-  sudo_user: tinkerware
-
-- name: Remove rubyversion from Gemfiles
-  lineinfile:
-    dest: "{{ rails_git_clone_path }}/{{ item.value.name | basename }}/Gemfile"
-    regexp: "ruby '.*'"
-    line: "ruby '2.3.3'"
-    backup: no
-  with_dict: "{{ rails_repos | default({}) }}"
-  when: rails_repos is defined
-  sudo: yes
-  sudo_user: tinkerware      
-
-- name: Get apps dependencies
-  shell: bundle install --path vendor/bundle
-  args:
-    chdir: "{{ rails_git_clone_path }}/{{ item.value.name | basename }}"
-  with_dict: "{{ rails_repos | default({}) }}"
-  when: rails_repos is defined  
-  sudo: yes
-  sudo_user: tinkerware
-  
-- name: Start apps
-  shell: nohup rails server --binding=0.0.0.0 --port="{{ item.value.port | default(3000) }}" >> /tmp/rails.log 2>&1 &
-  args:
-    chdir: "{{ rails_git_clone_path }}/{{ item.value.name | basename }}"
-  with_dict: "{{ rails_repos | default({}) }}"
-  when: rails_repos is defined  
-  tags: run_rails
-  sudo: yes
-  sudo_user: tinkerware
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"

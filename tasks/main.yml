@@ -24,39 +24,37 @@
 
 - name: download specified ruby version
   get_url:
-    url: "http://ftp.ruby-lang.org/pub/ruby/{{ ruby_version |  }}/ruby-{{ ruby_version }}.tar.gz"
-    dest: /home/vagrant/ruby2.3.3.tar.gz
+    url: "http://ftp.ruby-lang.org/pub/ruby/{{ rails_ruby_version | regex_replace('(^\\d.\\d?).*', '\\1') }}/ruby-{{ rails_ruby_version }}.tar.gz"
+    dest: "{{ rails_ruby_package }}"
     mode: 0644
-    owner: vagrant
-    group: vagrant
-  sudo: yes
-    
-- file:
-    path: "/home/vagrant/ruby2.3.3"
-    state: directory
-    mode: 0755
-    owner: vagrant
-    group: vagrant
-  sudo: yes
-
-- name: unpack ruby2.3.3
-  unarchive:
-    src: /home/vagrant/ruby2.3.3.tar.gz
-    dest: /home/vagrant
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
   sudo: yes
   sudo_user: "{{ server_user }}"
 
-- name: install ruby2.3.3
+- name: unpack new ruby version
+  unarchive:
+    src: "{{ rails_ruby_package }}"
+    dest: "{{ lookup('env','HOME') }}"
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
+  sudo: yes
+
+- name: install new ruby version
   command: ./configure
   args:
-    chdir: /home/vagrant/ruby-2.3.3/
+    chdir: "{{ rails_ruby_version_path }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
 
 - make:
-    chdir: /home/vagrant/ruby-2.3.3
+    chdir: "{{ rails_ruby_version_path }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
 
-- name: Install ruby2.3.3
+- name: Install new ruby version
   make:
-    chdir: /home/vagrant/ruby-2.3.3
+    chdir: "{{ rails_ruby_version_path }}"
     target: install
   sudo: yes
 
@@ -65,28 +63,53 @@
   sudo: yes
 
 - name: install rails
-  command: gem install rails -v 5.0.0.1
+  command: "gem install rails -v {{ rails_rails_version }}"
   sudo: yes
+
+- name: Create destination folder for repo
+  file:
+    path: /opt/tinker/shared_files/rails_project
+    state: directory
+    owner: "{{ server_user }}"
+    group: "{{ server_group }}"
+    mode: 0755
+  sudo: yes
+  sudo_user: "{{ server_user }}"
 
 - name: clone repo
   git:
-    repo: "{{ rails_git_repo }}"
-    dest: /home/vagrant/learn-rails
+    repo: "{{ item.value.name }}"
+    dest: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
+    version: "{{ item.value.version }}"
+    accept_hostkey: yes
+    recursive: yes
+    update: yes
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
+  ignore_errors: yes
 
-- name: Remove rubyversion from Gemfiles
+- name: remove rubyversion from Gemfiles
   lineinfile:
-    dest: "/home/vagrant/learn-rails/Gemfile"
+    dest: "{{ rails_repos_path }}/{{ item.value.name | basename }}/Gemfile"
     regexp: "ruby '.*'"
-    line: "ruby '2.3.3'"
+    line: 'ruby "{{ rails_ruby_version }}"'
     backup: no
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"
 
 - name: Get dependencies for repo.
-  command: bundle install
+  shell: bundle install
   args:
-    chdir: /home/vagrant/learn-rails
+    chdir: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
+  sudo: yes
+  with_dict: "{{ rails_git_repos }}"
 
 - name: Start aplication
-  shell: nohup rails server --binding=0.0.0.0 --port=3000 >> /tmp/rails.log 2>&1 &
+  shell: "nohup rails server --binding={{ rails_binding_ip }} --port={{ item.value.port }} >> /tmp/rails.log 2>&1 &"
   args:
-    chdir: /home/vagrant/learn-rails
-
+    chdir: "{{ rails_repos_path }}/{{ item.value.name | basename }}"
+  sudo: yes
+  sudo_user: "{{ server_user }}"
+  with_dict: "{{ rails_git_repos }}"

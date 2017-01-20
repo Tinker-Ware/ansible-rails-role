@@ -1,9 +1,15 @@
 ---
+- name: get ruby repository
+  apt_repository:
+    repo: ppa:brightbox/ruby-ng
+    state: present
+    update_cache: yes
+  sudo: yes
+
 - apt:
     name: "{{ item }}"
     state: present
   with_items:
-    - ruby-full
     - git-core
     - curl
     - zlib1g-dev
@@ -20,42 +26,8 @@
     - libffi-dev
     - nodejs
     - libpq-dev
-  sudo: yes
-
-- name: download specified ruby version
-  get_url:
-    url: "http://ftp.ruby-lang.org/pub/ruby/{{ rails_ruby_version | regex_replace('(^\\d.\\d?).*', '\\1') }}/ruby-{{ rails_ruby_version }}.tar.gz"
-    dest: "{{ rails_ruby_package }}"
-    mode: 0644
-    owner: "{{ server_user }}"
-    group: "{{ server_group }}"
-  sudo: yes
-  sudo_user: "{{ server_user }}"
-
-- name: unpack new ruby version
-  unarchive:
-    src: "{{ rails_ruby_package }}"
-    dest: "{{ lookup('env','HOME') }}"
-    owner: "{{ server_user }}"
-    group: "{{ server_group }}"
-  sudo: yes
-
-- name: install new ruby version
-  command: ./configure
-  args:
-    chdir: "{{ rails_ruby_version_path }}"
-  sudo: yes
-  sudo_user: "{{ server_user }}"
-
-- make:
-    chdir: "{{ rails_ruby_version_path }}"
-  sudo: yes
-  sudo_user: "{{ server_user }}"
-
-- name: Install new ruby version
-  make:
-    chdir: "{{ rails_ruby_version_path }}"
-    target: install
+    - "ruby{{ rails_ruby_subversion }}"
+    - "ruby{{ rails_ruby_subversion }}-dev"
   sudo: yes
 
 - name: install bundler

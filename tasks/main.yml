@@ -26,8 +26,8 @@
     - libffi-dev
     - nodejs
     - libpq-dev
-    - "ruby{{ rails_ruby_subversion }}"
-    - "ruby{{ rails_ruby_subversion }}-dev"
+    - "ruby{{ rails_ruby_version | regex_replace('(^\\d.\\d?).*', '\\1') }}"
+    - "ruby{{ rails_ruby_version | regex_replace('(^\\d.\\d?).*', '\\1') }}-dev"
   sudo: yes
 
 - name: install bundler

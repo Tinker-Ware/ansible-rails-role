@@ -1,7 +1,6 @@
 ---
 rails_git_key_path: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
 rails_ruby_version: 2.3.3
-rails_ruby_subversion: 2.3
 rails_rails_version: 5.0.0.1
 rails_repos_path: /opt/tinker/shared_files/rails_project
 rails_binding_ip: 0.0.0.0

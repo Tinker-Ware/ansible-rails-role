@@ -55,11 +55,11 @@
     version: "{{ item.value.version }}"
     accept_hostkey: yes
     recursive: yes
-    update: yes
+    update: no
+    force: no
   sudo: yes
   sudo_user: "{{ server_user }}"
   with_dict: "{{ rails_git_repos }}"
-  ignore_errors: yes
 
 - name: remove rubyversion from Gemfiles
   lineinfile:

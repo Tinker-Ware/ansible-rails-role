@@ -85,3 +85,4 @@
   sudo: yes
   sudo_user: "{{ server_user }}"
   with_dict: "{{ rails_git_repos }}"
+  tags: run_rails
